@@ -1,0 +1,19 @@
+# DayLog Dependencies
+
+# Core libraries (built-in with Python)
+# sqlite3, datetime, json, pathlib, tempfile, shutil, dataclasses, typing, urllib.parse
+
+# API Integration libraries
+requests>=2.28.0        # HTTP requests for API integration
+python-dotenv>=1.0.0    # Environment variable management
+
+# Optional: For future enhancements
+# pandas>=1.5.0        # Data analysis and manipulation
+# psutil>=5.9.0        # System and process monitoring
+# openai>=1.0.0        # OpenAI API integration (for AI summaries)
+# flask>=2.3.0         # Web server for webhooks (if needed)
+
+# Development dependencies (optional)
+# pytest>=7.0.0        # Testing framework
+# black>=22.0.0        # Code formatting
+# flake8>=5.0.0        # Linting
