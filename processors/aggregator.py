@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Union
 from dataclasses import dataclass, asdict
 from collectors.browser import BrowserActivity
 from collectors.ai_chats import AIChatActivity
+from collectors.git import GitActivity
 
 
 @dataclass
@@ -40,6 +41,8 @@ class DataAggregator:
                 all_activities.extend(self._process_browser_activities(collection))
             elif isinstance(collection[0], AIChatActivity):
                 all_activities.extend(self._process_ai_chat_activities(collection))
+            elif isinstance(collection[0], GitActivity):
+                all_activities.extend(self._process_git_activities(collection))
             # TODO: Add processors for other activity types
         
         # Remove duplicates and sort by timestamp
@@ -164,6 +167,50 @@ class DataAggregator:
         
         # Default to learning for AI interactions
         return "learning"
+    
+    def _process_git_activities(self, git_activities: List[GitActivity]) -> List[ActivityEntry]:
+        """Convert Git activities to generic activity entries"""
+        activities = []
+        
+        for git_activity in git_activities:
+            # Create descriptive title based on activity type
+            if git_activity.activity_type == 'commit':
+                # Create concise commit title
+                message = git_activity.commit_message.split('\n')[0]  # First line only
+                if len(message) > 50:
+                    message = message[:47] + "..."
+                title = f"📝 {git_activity.repository}: {message}"
+            elif git_activity.activity_type == 'branch_switch':
+                title = f"🔄 {git_activity.repository}: {git_activity.commit_message}"
+            else:
+                title = f"⚙️ {git_activity.repository}: {git_activity.commit_message}"
+            
+            # Categorize Git activity (almost always work)
+            category = "work"  # Git activities are typically work-related
+            
+            activity = ActivityEntry(
+                timestamp=git_activity.timestamp,
+                activity_type="git",
+                title=title,
+                details={
+                    "repository": git_activity.repository,
+                    "repository_path": git_activity.repository_path,
+                    "branch": git_activity.branch,
+                    "commit_hash": git_activity.commit_hash,
+                    "commit_message": git_activity.commit_message,
+                    "author": git_activity.author,
+                    "activity_type": git_activity.activity_type,
+                    "files_changed": git_activity.files_changed,
+                    "insertions": git_activity.insertions,
+                    "deletions": git_activity.deletions,
+                    "lines_changed": git_activity.insertions + git_activity.deletions
+                },
+                category=category
+            )
+            
+            activities.append(activity)
+        
+        return activities
     
     def _remove_duplicates(self, activities: List[ActivityEntry]) -> List[ActivityEntry]:
         """Remove duplicate activities based on timestamp and title"""

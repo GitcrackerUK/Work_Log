@@ -13,12 +13,14 @@ sys.path.append(str(Path(__file__).parent))
 
 from collectors.browser import BrowserActivity
 from collectors.ai_chats import AIChatActivity
+from collectors.git import GitActivity
 from processors.aggregator import DataAggregator
+from processors.report_generator import DailyReportGenerator
 from config.settings import Settings
 
 
 def create_test_data() -> tuple:
-    """Create some test browser and AI chat activities for demonstration"""
+    """Create some test browser, AI chat, and Git activities for demonstration"""
     now = datetime.now()
     
     test_browser_activities = [
@@ -94,7 +96,49 @@ def create_test_data() -> tuple:
         )
     ]
     
-    return test_browser_activities, test_ai_chat_activities
+    test_git_activities = [
+        GitActivity(
+            timestamp=now - timedelta(hours=2, minutes=30),
+            activity_type="commit",
+            repository="DayLog",
+            branch="main",
+            commit_hash="a1b2c3d4",
+            commit_message="Add browser history collection feature\n\nImplemented SQLite database reading for Chrome, Edge, and Firefox browsers with proper error handling and temporary file management.",
+            author="Pawel",
+            files_changed=["collectors/browser.py", "main.py", "README.md"],
+            insertions=145,
+            deletions=12,
+            repository_path="C:\\Users\\Pawel\\Desktop\\Projects\\DayLog"
+        ),
+        GitActivity(
+            timestamp=now - timedelta(hours=1, minutes=45),
+            activity_type="commit",
+            repository="Work_Log",
+            branch="feature/git-integration",
+            commit_hash="e5f6g7h8",
+            commit_message="Implement Git activity tracking",
+            author="Pawel",
+            files_changed=["collectors/git.py", "processors/aggregator.py"],
+            insertions=78,
+            deletions=5,
+            repository_path="C:\\Users\\Pawel\\Desktop\\Projects\\Work_Log"
+        ),
+        GitActivity(
+            timestamp=now - timedelta(minutes=40),
+            activity_type="branch_switch",
+            repository="DayLog",
+            branch="main",
+            commit_hash=None,
+            commit_message="Switched from feature/reports to main",
+            author="Pawel", 
+            files_changed=[],
+            insertions=0,
+            deletions=0,
+            repository_path="C:\\Users\\Pawel\\Desktop\\Projects\\DayLog"
+        )
+    ]
+    
+    return test_browser_activities, test_ai_chat_activities, test_git_activities
 
 
 def main():
@@ -106,16 +150,17 @@ def main():
     settings = Settings("config/settings.json")
     
     # Create test data
-    print("📊 Creating test browser and AI chat activities...")
-    test_browser_activities, test_ai_chat_activities = create_test_data()
+    print("📊 Creating test browser, AI chat, and Git activities...")
+    test_browser_activities, test_ai_chat_activities, test_git_activities = create_test_data()
     
     print(f"   ✅ Created {len(test_browser_activities)} browser activities")
     print(f"   ✅ Created {len(test_ai_chat_activities)} AI chat activities")
+    print(f"   ✅ Created {len(test_git_activities)} Git activities")
     
     # Test data aggregation
     print("\n🔄 Testing data aggregation...")
     aggregator = DataAggregator(settings)
-    all_activities = aggregator.combine([test_browser_activities, test_ai_chat_activities])
+    all_activities = aggregator.combine([test_browser_activities, test_ai_chat_activities, test_git_activities])
     
     print(f"   ✅ Processed {len(all_activities)} activities")
     
@@ -141,7 +186,8 @@ def main():
         
         activity_emoji = {
             "browser": "🌐",
-            "ai_chat": "🤖"
+            "ai_chat": "🤖",
+            "git": "⚙️"
         }.get(activity.activity_type, "❓")
         
         print(f"   {category_emoji}{activity_emoji} {time_str} - {activity.title[:60]}...")
@@ -153,6 +199,33 @@ def main():
             topic = activity.details['topic']
             message_count = activity.details['message_count']
             print(f"      └─ {service} • {topic} • {message_count} messages")
+        elif activity.activity_type == "git":
+            repository = activity.details['repository']
+            branch = activity.details['branch']
+            git_type = activity.details['activity_type']
+            if git_type == 'commit':
+                lines_changed = activity.details['lines_changed']
+                files_count = len(activity.details['files_changed'])
+                print(f"      └─ {repository} • {branch} • {files_count} files • ±{lines_changed} lines")
+            else:
+                print(f"      └─ {repository} • {branch} • {git_type}")
+    
+    # Test report generation
+    print("\n📋 Testing report generation...")
+    report_generator = DailyReportGenerator(settings)
+    
+    # Generate summary stats
+    summary = report_generator.generate_summary_stats(all_activities)
+    print(f"   📊 Summary Stats:")
+    print(f"      • Total: {summary['total']} activities")
+    print(f"      • Productivity: {summary['productivity']}%")
+    print(f"      • Time span: {summary['timespan']}")
+    print(f"      • Peak hour: {summary['most_active_hour']}")
+    
+    # Generate full report
+    target_date = datetime.now().date()
+    report_path = report_generator.generate_report(all_activities, target_date)
+    print(f"   ✅ Full report saved to: {report_path}")
     
     print("\n✨ Test completed successfully!")
     print("\n💡 To test with real browser data:")
